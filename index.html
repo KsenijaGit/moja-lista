@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Moja Lista</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
+    padding: 20px;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+h2 {
+    text-align: center;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 8px 12px;
+    margin: 5px 3px 5px 0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.primary { background: #4CAF50; color: white; }
+.danger { background: #e74c3c; color: white; }
+.secondary { background: #3498db; color: white; }
+
+.item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+}
+
+.hidden {
+    display: none;
+}
+
+label {
+    flex: 1;
+    margin-left: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Moja Lista</h2>
+
+    <input type="text" id="pretraga" placeholder="Pretraga...">
+
+    <div>
+        <input type="text" id="novaStavka" placeholder="Nova stavka...">
+        <button class="primary" onclick="dodajStavku()">Dodaj</button>
+    </div>
+
+    <button class="secondary" onclick="sakrijCekirane()">Sakrij čekirane</button>
+    <button class="secondary" onclick="prikaziSve()">Prikaži sve</button>
+    <button class="danger" onclick="resetuj()">Reset</button>
+
+    <hr>
+
+    <div id="lista"></div>
+</div>
+
+<script>
+
+let stavke = [];
+let sakriveno = false;
+
+async function ucitajIni() {
+    try {
+        const response = await fetch("lista.ini");
+        const text = await response.text();
+        stavke = text.trim().split("\n");
+        prikaziListu();
+    } catch (error) {
+        console.log("Greška pri učitavanju fajla:", error);
+    }
+}
+
+function prikaziListu() {
+    const listaDiv = document.getElementById("lista");
+    listaDiv.innerHTML = "";
+
+    const filter = document.getElementById("pretraga").value.toLowerCase();
+
+    stavke.forEach((tekst, index) => {
+
+        if (!tekst.toLowerCase().includes(filter)) return;
+
+        const div = document.createElement("div");
+        div.className = "item";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = "item_" + index;
+        checkbox.checked = localStorage.getItem(checkbox.id) === "true";
+
+        if (sakriveno && checkbox.checked) return;
+
+        checkbox.addEventListener("change", () => {
+            localStorage.setItem(checkbox.id, checkbox.checked);
+        });
+
+        const label = document.createElement("label");
+        label.innerText = tekst;
+
+        const btnBrisi = document.createElement("button");
+        btnBrisi.className = "danger";
+        btnBrisi.innerText = "X";
+        btnBrisi.onclick = () => obrisiStavku(index);
+
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        div.appendChild(btnBrisi);
+
+        listaDiv.appendChild(div);
+    });
+}
+
+function dodajStavku() {
+    const input = document.getElementById("novaStavka");
+    const vrednost = input.value.trim();
+    if (vrednost === "") return;
+
+    stavke.push(vrednost);
+    input.value = "";
+    prikaziListu();
+}
+
+function obrisiStavku(index) {
+    stavke.splice(index, 1);
+    prikaziListu();
+}
+
+function resetuj() {
+    localStorage.clear();
+    location.reload();
+}
+
+function sakrijCekirane() {
+    sakriveno = true;
+    prikaziListu();
+}
+
+function prikaziSve() {
+    sakriveno = false;
+    prikaziListu();
+}
+
+document.getElementById("pretraga").addEventListener("input", prikaziListu);
+
+ucitajIni();
+
+</script>
+
+</body>
+</html>
